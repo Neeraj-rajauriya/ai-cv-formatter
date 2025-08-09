@@ -1,0 +1,26 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log
+pnpm-lock.yaml
+package-lock.json
+
+# envs and secrets
+.env
+.env.local
+.env.*.local
+
+# build outputs, uploads
+dist/
+.build/
+.next/
+uploads/
+exports/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
