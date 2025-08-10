@@ -1,8 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
-import userRoutes from './src/routes/userRoutes.js';
-import uploadRoutes from './src/routes/uploadRoutes.js';
+import routes from './src/routes/index.js';
+
 // import cvRoutes from "./src/routes/cvRoutes.js";
 import cors from 'cors';
 
@@ -16,11 +16,12 @@ app.use(cors({
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+
 app.use(express.json());
 
 // Routes
-app.use('/api/users', userRoutes);
-app.use('/api/cv', uploadRoutes);
+app.use('/api', routes);
 app.use('/uploads', express.static('uploads'));
 // app.use("/api/cv", cvRoutes);
 
