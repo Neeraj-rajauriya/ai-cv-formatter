@@ -1,4 +1,3 @@
-
 import OpenAI from "openai";
 import dotenv from "dotenv";
 dotenv.config();
@@ -7,66 +6,157 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, 
 });
 
-export async function formatCV(extractedText) {
+export async function formatCV(resumeText, ehsFormText) {
   const prompt = `
-You are an AI-powered CV formatter. 
-You will receive unstructured CV data extracted from a document.
-Transform the data according to the following rules:
+You are an AI-powered CV formatter for Exclusive Household Staff. 
+You will receive:
+1. Unstructured CV data
+2. Structured EHS registration form data
 
-Typography & Structure
-- Font: Palatino Linotype throughout (note this in output metadata)
-- Photo Sizing: 4.7cm, convert landscape to portrait
-- Date Format: Use first 3 letters of month only (e.g., Jan 2020)
-- Job titles: Always start with a capital letter
+=== INSTRUCTIONS ===
+1. COMBINE both data sources intelligently
+2. FOLLOW these formatting rules exactly:
 
-Content Organization
-1. Header: Name, Job Title, Professional Photo
-2. Personal Details: Nationality, Languages, DOB, Marital Status
-3. Profile: Professional summary
-4. Experience: Reverse chronological, bullet points
-5. Education: Consistent formatting
-6. Key Skills: Bullet points
-7. Interests: Bullet points
+=== FORMATTING RULES ===
+• Font: Palatino Linotype
+• Dates: "Jan 2020" format
+• UK English spelling ("organise")
+• Job Titles: Capitalized
+• Convert paragraphs → bullet points
+• Professional tone throughout
 
-Content Cleanup Rules
-- Replace "I am responsible for" → "Responsible for"
-- Replace "Principle" → "Principal", "Discrete" → "Discreet"
-- Remove fields: Age, Dependants
-- Convert paragraphs to bullet points
-- Ensure professional tone
-
-OUTPUT FORMAT:
-Return a JSON object with the following keys:
+=== OUTPUT STRUCTURE ===
 {
-  "header": { "name": "", "jobTitle": "", "photoUrl": "" },
-  "personalDetails": {},
-  "profile": "",
-  "experience": [],
+  "header": {
+    "name": "First Last",           // Combine EHS + CV names
+    "jobTitle": "",                 // From CV
+    "contact": {
+      "phone": "",                  // Prefer EHS
+      "email": ""                   // Prefer EHS
+    }
+  },
+  "personalDetails": {
+    "nationality": "",              // Prefer EHS
+    "languages": [],                // Combine both
+    "dob": "DD/MM/YYYY",            // From EHS
+    "maritalStatus": "",            // Prefer EHS
+    "drivingLicense": "YES/NO",     // From EHS
+    "smoker": "YES/NO",             // From EHS
+    "pets": "YES/NO",               // From EHS
+    "dbsStatus": "YES/NO"           // From EHS
+  },
+  "profile": "",                    // Professional summary
+  "experience": [],                 // Reverse chronological
   "education": [],
   "keySkills": [],
-  "interests": []
+  "interests": [],
+  "footer": "Exclusive Household Staff..." // Fixed text
 }
 
-EXTRACTED CV DATA:
-${extractedText}
-IMPORTANT: Return ONLY valid JSON without any Markdown formatting or code blocks. Do not include \`\`\`json or \`\`\` in your response.
+=== INPUT DATA ===
+RESUME:
+${resumeText}
+
+EHS FORM:
+${ehsFormText}
+
+IMPORTANT: Return ONLY pure JSON. No markdown, no explanations.
 `;
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Fast & cheap, change if needed
-      messages: [{ role: "user", content: prompt }],
+      model: "gpt-4o-mini", // Most current efficient GPT-4 model
+      messages: [
+        {
+          role: "system",
+          content: "You output perfect JSON. No commentary, just data."
+        },
+        {
+          role: "user", 
+          content: prompt
+        }
+      ],
       temperature: 0,
+      response_format: { type: "json_object" } // Ensures JSON output
     });
 
-    // Parse JSON from AI response
-    const jsonOutput = JSON.parse(response.choices[0].message.content);
-    return jsonOutput;
+    // Directly return the parsed JSON
+    return JSON.parse(response.choices[0].message.content);
+
   } catch (error) {
-    console.error("Error formatting CV:", error);
-    throw error;
+    console.error("CV Formatting Failed:", error);
+    throw new Error(`AI Processing Error: ${error.message}`);
   }
 }
+
+// import OpenAI from "openai";
+// import dotenv from "dotenv";
+// dotenv.config();
+
+// const openai = new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY, 
+// });
+
+// export async function formatCV(extractedText) {
+//   const prompt = `
+// You are an AI-powered CV formatter. 
+// You will receive unstructured CV data extracted from a document.
+// Transform the data according to the following rules:
+
+// Typography & Structure
+// - Font: Palatino Linotype throughout (note this in output metadata)
+// - Photo Sizing: 4.7cm, convert landscape to portrait
+// - Date Format: Use first 3 letters of month only (e.g., Jan 2020)
+// - Job titles: Always start with a capital letter
+
+// Content Organization
+// 1. Header: Name, Job Title, Professional Photo
+// 2. Personal Details: Nationality, Languages, DOB, Marital Status
+// 3. Profile: Professional summary
+// 4. Experience: Reverse chronological, bullet points
+// 5. Education: Consistent formatting
+// 6. Key Skills: Bullet points
+// 7. Interests: Bullet points
+
+// Content Cleanup Rules
+// - Replace "I am responsible for" → "Responsible for"
+// - Replace "Principle" → "Principal", "Discrete" → "Discreet"
+// - Remove fields: Age, Dependants
+// - Convert paragraphs to bullet points
+// - Ensure professional tone
+
+// OUTPUT FORMAT:
+// Return a JSON object with the following keys:
+// {
+//   "header": { "name": "", "jobTitle": "", "photoUrl": "" },
+//   "personalDetails": {},
+//   "profile": "",
+//   "experience": [],
+//   "education": [],
+//   "keySkills": [],
+//   "interests": []
+// }
+
+// EXTRACTED CV DATA:
+// ${extractedText}
+// IMPORTANT: Return ONLY valid JSON without any Markdown formatting or code blocks. Do not include \`\`\`json or \`\`\` in your response.
+// `;
+
+//   try {
+//     const response = await openai.chat.completions.create({
+//       model: "gpt-4o-mini", // Fast & cheap, change if needed
+//       messages: [{ role: "user", content: prompt }],
+//       temperature: 0,
+//     });
+
+//     // Parse JSON from AI response
+//     const jsonOutput = JSON.parse(response.choices[0].message.content);
+//     return jsonOutput;
+//   } catch (error) {
+//     console.error("Error formatting CV:", error);
+//     throw error;
+//   }
+// }
 
 
 // import OpenAI from 'openai';

@@ -1,161 +1,256 @@
+import CV from '../models/cv.model.js';
+import fs from 'fs';
+import extract from 'pdf-text-extract';
+import { formatCV } from '../../utils/cvFormatter.js';
+
+const uploadCV = async (req, res) => {
+  try {
+    const { resume, ehsForm, userImage } = req.files;
+
+    if (!resume || !ehsForm || !userImage) {
+      return res.status(400).json({
+        message: 'Please upload all files: resume, EHS form, and profile image'
+      });
+    }
+
+    // Store file paths for cleanup
+    const filesToCleanup = [
+      resume[0].path,
+      ehsForm[0].path,
+      userImage[0].path
+    ];
+
+    // Text extraction from PDFs
+    let resumeText = '';
+    let ehsFormText = '';
+
+    try {
+      // Extract text from resume PDF
+      if (resume[0].mimetype === 'application/pdf') {
+        resumeText = await extractTextFromPDF(resume[0].path);
+      }
+
+      // Extract text from EHS form PDF
+      if (ehsForm[0].mimetype === 'application/pdf') {
+        ehsFormText = await extractTextFromPDF(ehsForm[0].path);
+      }
+    } catch (error) {
+      console.error('PDF extraction error:', error);
+      cleanupFiles(filesToCleanup);
+      return res.status(500).json({ message: 'Error extracting text from PDFs' });
+    }
+
+    // Format combined data using OpenAI
+    let formattedCV;
+    try {
+      formattedCV = await formatCV(resumeText, ehsFormText);
+      
+      // Add EHS footer and user image
+      formattedCV.footer = "Exclusive Household Staff & Nannies\nwww.exclusivehouseholdstaff.com\nTelephone: +44 (0) 203 358 7000";
+      formattedCV.header.photoUrl = userImage[0].path;
+
+      // Create new CV document with flat structure
+      const newCV = new CV({
+        // Resume Fields
+        resumeOriginalName: resume[0].originalname,
+        resumeStoredName: resume[0].filename,
+        resumeFileType: resume[0].mimetype,
+        resumeFilePath: resume[0].path,
+        
+        // EHS Form Fields
+        ehsOriginalName: ehsForm[0].originalname,
+        ehsStoredName: ehsForm[0].filename,
+        ehsFileType: ehsForm[0].mimetype,
+        ehsFilePath: ehsForm[0].path,
+        
+        // User Image Fields
+        imageOriginalName: userImage[0].originalname,
+        imageStoredName: userImage[0].filename,
+        imageFileType: userImage[0].mimetype,
+        imageFilePath: userImage[0].path,
+        
+        // Common Fields
+        uploadedBy: req.user.id,
+        extractedText: {
+          resume: resumeText,
+          ehsForm: ehsFormText
+        },
+        formattedCV: formattedCV
+      });
+
+      await newCV.save();
+
+      // Delete files after successful processing and storage
+      cleanupFiles(filesToCleanup);
+
+      res.status(201).json({
+        message: 'Files uploaded successfully',
+        cvId: newCV._id,
+        formattedCV: formattedCV
+      });
+
+    } catch (error) {
+      console.error("CV formatting error:", error);
+      cleanupFiles(filesToCleanup);
+      return res.status(500).json({ message: 'Error formatting CV data' });
+    }
+
+  } catch (err) {
+    console.error('Upload Error:', err);
+    
+    // Cleanup files if error occurs
+    if (req.files) {
+      cleanupFiles([
+        ...(req.files.resume ? req.files.resume.map(f => f.path) : []),
+        ...(req.files.ehsForm ? req.files.ehsForm.map(f => f.path) : []),
+        ...(req.files.userImage ? req.files.userImage.map(f => f.path) : [])
+      ]);
+    }
+    
+    res.status(500).json({ 
+      message: 'Server error during upload',
+      error: err.message 
+    });
+  }
+};
+
+// Helper function for PDF text extraction
+const extractTextFromPDF = (filePath) => {
+  return new Promise((resolve, reject) => {
+    extract(filePath, (err, pages) => {
+      if (err) reject(err);
+      resolve(pages.join('\n'));
+    });
+  });
+};
+
+// Helper function to clean up files
+const cleanupFiles = (filePaths) => {
+  filePaths.forEach(filePath => {
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`Deleted file: ${filePath}`);
+      }
+    } catch (err) {
+      console.error(`Error deleting file ${filePath}:`, err);
+    }
+  });
+};
+
+export default uploadCV;
 // import CV from '../models/cv.model.js';
 // import fs from 'fs';
-// import  extract  from 'pdf-text-extract';
+// import extract from 'pdf-text-extract';
 // import { formatCV } from '../../utils/cvFormatter.js';
 
 // const uploadCV = async (req, res) => {
 //   try {
-//     const file = req.file;
+//     const { resume, ehsForm, userImage } = req.files;
 
-//     if (!file) {
-//       return res.status(400).json({ message: 'No file uploaded' });
+//     if (!resume || !ehsForm || !userImage) {
+//       return res.status(400).json({
+//         message: 'Please upload all files: resume, EHS form, and profile image'
+//       });
 //     }
 
-//     let extractedText = '';
-    
-//     // Only process PDF files
-//     if (file.mimetype === 'application/pdf') {
-//       try {
-//         console.log("File path is",file.path);
-//         extractedText = await extractTextFromPDF(file.path);
-//         console.log('Successfully extracted PDF text');
-//       } catch (error) {
-//         console.error('PDF extraction error:', error);
-//       }
-//     }
-    
-//     // Call OpenAI to format CV
-//     let formattedCVJson = {};
+//     // Text extraction from PDFs
+//     let resumeText = '';
+//     let ehsFormText = '';
+
 //     try {
-//       formattedCVJson = await formatCV(extractedText);
+//       // Extract text from resume PDF
+//       if (resume[0].mimetype === 'application/pdf') {
+//         resumeText = await extractTextFromPDF(resume[0].path);
+//       }
+
+//       // Extract text from EHS form PDF
+//       if (ehsForm[0].mimetype === 'application/pdf') {
+//         ehsFormText = await extractTextFromPDF(ehsForm[0].path);
+//       }
 //     } catch (error) {
-//       console.error("OpenAI formatting error:", error);
-//       return res.status(500).json({ message: 'Error formatting CV using AI' });
+//       console.error('PDF extraction error:', error);
+//       return res.status(500).json({ message: 'Error extracting text from PDFs' });
 //     }
 
-//     const newCV = new CV({
-//       originalFileName: file.originalname,
-//       storedFileName: file.filename,
-//       fileType: file.mimetype,
-//       filePath: file.path,
-//       uploadedBy: req.user.id,
-//       extractedText: extractedText,
-//     });
+//     // Format combined data using OpenAI
+//     let formattedCV;
+//     try {
+//       formattedCV = await formatCV(resumeText, ehsFormText);
+      
+//       // Add EHS footer and user image
+//       formattedCV.footer = "Exclusive Household Staff & Nannies\nwww.exclusivehouseholdstaff.com\nTelephone: +44 (0) 203 358 7000";
+//       formattedCV.header.photoUrl = userImage[0].path;
 
-//     await newCV.save();
+//       // Create new CV document with flat structure
+//       const newCV = new CV({
+//         // Resume Fields
+//         resumeOriginalName: resume[0].originalname,
+//         resumeStoredName: resume[0].filename,
+//         resumeFileType: resume[0].mimetype,
+//         resumeFilePath: resume[0].path,
+        
+//         // EHS Form Fields
+//         ehsOriginalName: ehsForm[0].originalname,
+//         ehsStoredName: ehsForm[0].filename,
+//         ehsFileType: ehsForm[0].mimetype,
+//         ehsFilePath: ehsForm[0].path,
+        
+//         // User Image Fields
+//         imageOriginalName: userImage[0].originalname,
+//         imageStoredName: userImage[0].filename,
+//         imageFileType: userImage[0].mimetype,
+//         imageFilePath: userImage[0].path,
+        
+//         // Common Fields
+//         uploadedBy: req.user.id,
+//         extractedText: {
+//           resume: resumeText,
+//           ehsForm: ehsFormText
+//         },
+//         formattedCV: formattedCV
+//       });
 
-//     res.status(201).json({
-//       message: 'CV uploaded successfully',
-//       cvId: newCV._id,
-//       hasText: extractedText.length > 0,
-//       extractedText,
-//       formattedCV: formattedCVJson
-//     });
+//       await newCV.save();
+
+//       res.status(201).json({
+//         message: 'Files uploaded successfully',
+//         cvId: newCV._id,
+//         formattedCV: formattedCV
+//       });
+
+//     } catch (error) {
+//       console.error("CV formatting error:", error);
+//       return res.status(500).json({ message: 'Error formatting CV data' });
+//     }
 
 //   } catch (err) {
 //     console.error('Upload Error:', err);
-//     res.status(500).json({ message: 'Server error during file upload' });
+    
+//     // Cleanup files if error occurs
+//     if (req.files) {
+//       Object.values(req.files).forEach(files => {
+//         files.forEach(file => {
+//           if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+//         });
+//       });
+//     }
+    
+//     res.status(500).json({ 
+//       message: 'Server error during upload',
+//       error: err.message 
+//     });
 //   }
 // };
 
-// // Simple, reliable text extraction
+// // Helper function for PDF text extraction
 // const extractTextFromPDF = (filePath) => {
 //   return new Promise((resolve, reject) => {
 //     extract(filePath, (err, pages) => {
-//       if (err) return reject(err);
+//       if (err) reject(err);
 //       resolve(pages.join('\n'));
 //     });
 //   });
 // };
 
 // export default uploadCV;
-
-import CV from '../models/cv.model.js';
-import fs from 'fs';
-import  extract from 'pdf-text-extract';
-import { formatCV } from '../../utils/cvFormatter.js';
-
-const uploadCV = async (req, res) => {
-  try {
-    const file = req.file;
-
-    if (!file) {
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
-
-    let extractedText = '';
-    
-    if (file.mimetype === 'application/pdf') {
-      try {
-        extractedText = await extractTextFromPDF(file.path);
-      } catch (error) {
-        console.error('PDF extraction error:', error);
-      }
-    }
-    
-    // Format with OpenAI
-    let formattedCV = {};
-    try {
-      formattedCV = await formatCV(extractedText);
-      
-      // Ensure the structure matches the Oliver template
-      const standardizedCV = {
-        header: {
-          name: formattedCV.header?.name || '',
-          jobTitle: formattedCV.header?.jobTitle || '',
-          photoUrl: formattedCV.header?.photoUrl || ''
-        },
-        personalDetails: {
-          nationality: formattedCV.personalDetails?.nationality || '',
-          languages: formattedCV.personalDetails?.languages || '',
-          dob: formattedCV.personalDetails?.dob || '',
-          maritalStatus: formattedCV.personalDetails?.maritalStatus || ''
-        },
-        profile: formattedCV.profile || '',
-        experience: formattedCV.experience || [],
-        education: formattedCV.education || [],
-        keySkills: formattedCV.keySkills || [],
-        interests: formattedCV.interests || []
-      };
-
-      const newCV = new CV({
-        originalFileName: file.originalname,
-        storedFileName: file.filename,
-        fileType: file.mimetype,
-        filePath: file.path,
-        uploadedBy: req.user.id,
-        extractedText: extractedText,
-        formattedCV: standardizedCV
-      });
-
-      await newCV.save();
-
-      res.status(201).json({
-        message: 'CV uploaded successfully',
-        cvId: newCV._id,
-        hasText: extractedText.length > 0,
-        extractedText,
-        formattedCV: standardizedCV
-      });
-
-    } catch (error) {
-      console.error("OpenAI formatting error:", error);
-      return res.status(500).json({ message: 'Error formatting CV using AI' });
-    }
-
-  } catch (err) {
-    console.error('Upload Error:', err);
-    res.status(500).json({ message: 'Server error during file upload' });
-  }
-};
-
-const extractTextFromPDF = (filePath) => {
-  return new Promise((resolve, reject) => {
-    extract(filePath, (err, pages) => {
-      if (err) return reject(err);
-      resolve(pages.join('\n'));
-    });
-  });
-};
-
-export default uploadCV;

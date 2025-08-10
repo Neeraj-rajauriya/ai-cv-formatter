@@ -1,3 +1,44 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.page-break-after {
+  page-break-after: always;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .resume-container, .resume-container * {
+    visibility: visible;
+  }
+  .resume-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+
+/* Add these styles to your global CSS */
+.page-footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 1rem 0;
+  background-color: #dc2626; /* red-600 */
+  color: white;
+  text-align: center;
+  border-top: 4px solid #b91c1c; /* red-700 */
+}
+
+.page-container {
+  position: relative;
+  min-height: 100vh;
+  padding-bottom: 80px; /* Footer height */
+}

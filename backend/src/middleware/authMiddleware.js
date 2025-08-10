@@ -37,6 +37,7 @@ export const authMiddleware = async (req, res, next) => {
     }
 
     // Verify token
+    console.log("Before berifying token");
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Attach user info to request
@@ -60,3 +61,4 @@ export const authMiddleware = async (req, res, next) => {
     });
   }
 };
+

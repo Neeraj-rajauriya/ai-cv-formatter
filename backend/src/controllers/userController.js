@@ -31,7 +31,7 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-
+     console.log("Inside login");
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
@@ -50,5 +50,33 @@ export const loginUser = async (req, res) => {
   } catch (err) {
     console.error("Error:", err.message);
     res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Add this to your existing userController.js
+// controllers/userController.js
+export const verifyToken = (req, res) => {
+  try {
+    console.log("Inside verify token");
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User information not found in token'
+      });
+    }
+
+    res.status(200).json({ 
+      success: true,
+      user: {
+        id: req.user.id,
+        // Add other fields you include when generating the token
+      },
+      message: 'Token is valid'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error during token verification'
+    });
   }
 };

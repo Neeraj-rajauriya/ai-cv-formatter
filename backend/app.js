@@ -21,6 +21,7 @@ app.use(express.json());
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/cv', uploadRoutes);
+app.use('/uploads', express.static('uploads'));
 // app.use("/api/cv", cvRoutes);
 
 
