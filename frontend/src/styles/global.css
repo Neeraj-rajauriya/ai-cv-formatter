@@ -42,3 +42,77 @@
   min-height: 100vh;
   padding-bottom: 80px; /* Footer height */
 }
+
+/* In your global CSS */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  .pdf-page {
+    page-break-after: always;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  body {
+    margin: 0;
+  }
+}
+
+/* Ensure perfect PDF rendering */
+@page {
+  size: A4;
+  margin: 0;
+}
+body {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+/* Lock all dimensions for PDF */
+.resume-page {
+  width: 210mm !important;
+  height: 297mm !important;
+  overflow: hidden;
+}
+
+/* PDF Rendering Fixes */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+.resume-page {
+  width: 210mm;
+  height: 297mm;
+  position: relative;
+  overflow: hidden;
+  background: white;
+}
+
+.page-content {
+  min-height: calc(297mm - 15mm - 15mm); /* Account for padding */
+  position: relative;
+  padding-bottom: 20mm; /* Space for footer */
+}
+
+.footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  padding: 2mm 15mm;
+  background: #59070e;
+  color: white;
+  text-align: center;
+}
+
+/* Logo sizing protection for PDF */
+.resume-page .logo-container img {
+  max-height: 20mm !important;
+  width: auto !important;
+  object-fit: contain !important;
+}

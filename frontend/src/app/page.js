@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-
+console.log("Api url is",process.env.NEXT_PUBLIC_API_URL);
 export default function Home() {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
@@ -27,13 +27,15 @@ export default function Home() {
       [e.target.name]: e.target.value,
     });
   };
-
+  const api_url=process.env.NEXT_PUBLIC_API_URL
+  console.log("api url is",api_url);
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
+    
     try {
+      console.log("Try block");
       const url = isLogin
         ? `${process.env.NEXT_PUBLIC_API_URL}/users/login`
         : `${process.env.NEXT_PUBLIC_API_URL}/users/register`;

@@ -1,7 +1,8 @@
 import axios from 'axios';
 
+// ✅ Use NEXT_PUBLIC_API_URL from environment (fallback to localhost in dev)
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
 });
 
 // Add request interceptor for auth token

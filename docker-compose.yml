@@ -37,6 +37,4 @@ services:
     image: neerajrajauriya/ai-cv-formatter-frontend:1.0.0
     ports:
       - "3000:3000"
-    env_file:
-      - ./frontend/.env
     restart: unless-stopped
