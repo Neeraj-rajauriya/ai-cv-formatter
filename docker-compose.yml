@@ -1,0 +1,42 @@
+# version: "3.8"
+
+# services:
+#   backend:
+#     build:
+#       context: ./backend
+#     ports:
+#       - "5000:5000"
+#     env_file:
+#       - ./backend/.env
+#     depends_on:
+
+#       - frontend
+#     restart: always
+
+#   frontend:
+#     build:
+#       context: ./frontend
+#     ports:
+#       - "3000:3000"
+#     env_file:
+#       - ./frontend/.env
+#     restart: always
+
+
+version: "3.8"
+services:
+  backend:
+    image: neerajrajauriya/ai-cv-formatter-backend:1.0.0
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+
+  frontend:
+    image: neerajrajauriya/ai-cv-formatter-frontend:1.0.0
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env
+    restart: unless-stopped

@@ -12,7 +12,10 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000', // Your frontend URL
+  origin: [
+      'https://ai-cv-formatter-frontend-1-0-0.onrender.com',
+      'http://localhost:3000'
+    ], // Your frontend URL
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
